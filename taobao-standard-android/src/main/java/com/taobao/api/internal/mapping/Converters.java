@@ -1,8 +1,5 @@
 package com.taobao.api.internal.mapping;
 
-import java.beans.BeanInfo;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -12,6 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
 
@@ -31,7 +29,7 @@ public class Converters {
 	public static boolean isCheckJsonType = false; // 是否对JSON返回的数据类型进行校验，默认不校验。给内部测试JSON返回时用的开关。规则：返回的"基本"类型只有String,Long,Boolean,Date,采取严格校验方式，如果类型不匹配，报错
 
 	private static final Set<String> baseFields = new HashSet<String>();
-	
+
 	static {
 		baseFields.add("errorCode");
 		baseFields.add("msg");
@@ -49,31 +47,35 @@ public class Converters {
 	/**
 	 * 使用指定 的读取器去转换字符串为对象。
 	 * 
-	 * @param <T> 领域泛型
-	 * @param clazz 领域类型
-	 * @param reader 读取器
+	 * @param <T>
+	 *            领域泛型
+	 * @param clazz
+	 *            领域类型
+	 * @param reader
+	 *            读取器
 	 * @return 领域对象
 	 * @throws ApiException
 	 */
-	public static <T> T convert(Class<T> clazz, Reader reader) throws ApiException {
+	public static <T> T convert(Class<T> clazz, Reader reader)
+			throws ApiException {
 		T rsp = null;
 
 		try {
 			rsp = clazz.newInstance();
-			BeanInfo beanInfo = Introspector.getBeanInfo(clazz);
-			PropertyDescriptor[] pds = beanInfo.getPropertyDescriptors();
-
-			for (PropertyDescriptor pd : pds) {
-				Method method = pd.getWriteMethod();
-				if (method == null) { // ignore read-only fields
+			Method[] methods = clazz.getMethods();
+			for (Method method : methods) {
+				if (!method.getName().startsWith("set")) {
 					continue;
 				}
-
-				String itemName = pd.getName();
+				String name = method.getName().substring(3);
+				String itemName = name.substring(0, 1).toLowerCase(
+						Locale.ENGLISH)
+						+ name.substring(1);
 				String listName = null;
 
 				Field field;
-				if (baseFields.contains(itemName) && TaobaoResponse.class.isAssignableFrom(clazz)) {
+				if (baseFields.contains(itemName)
+						&& TaobaoResponse.class.isAssignableFrom(clazz)) {
 					field = TaobaoResponse.class.getDeclaredField(itemName);
 				} else {
 					field = clazz.getDeclaredField(itemName);
@@ -83,7 +85,8 @@ public class Converters {
 				if (jsonField != null) {
 					itemName = jsonField.value();
 				}
-				ApiListField jsonListField = field.getAnnotation(ApiListField.class);
+				ApiListField jsonListField = field
+						.getAnnotation(ApiListField.class);
 				if (jsonListField != null) {
 					listName = jsonListField.value();
 				}
@@ -102,7 +105,8 @@ public class Converters {
 						method.invoke(rsp, value.toString());
 					} else {
 						if (isCheckJsonType && value != null) {
-							throw new ApiException(itemName + " is not a String");
+							throw new ApiException(itemName
+									+ " is not a String");
 						}
 						if (value != null) {
 							method.invoke(rsp, value.toString());
@@ -116,7 +120,8 @@ public class Converters {
 						method.invoke(rsp, (Long) value);
 					} else {
 						if (isCheckJsonType && value != null) {
-							throw new ApiException(itemName + " is not a Number(Long)");
+							throw new ApiException(itemName
+									+ " is not a Number(Long)");
 						}
 						if (StringUtils.isNumeric(value)) {
 							method.invoke(rsp, Long.valueOf(value.toString()));
@@ -128,10 +133,12 @@ public class Converters {
 						method.invoke(rsp, (Integer) value);
 					} else {
 						if (isCheckJsonType && value != null) {
-							throw new ApiException(itemName + " is not a Number(Integer)");
+							throw new ApiException(itemName
+									+ " is not a Number(Integer)");
 						}
 						if (StringUtils.isNumeric(value)) {
-							method.invoke(rsp, Integer.valueOf(value.toString()));
+							method.invoke(rsp,
+									Integer.valueOf(value.toString()));
 						}
 					}
 				} else if (Boolean.class.isAssignableFrom(typeClass)) {
@@ -140,10 +147,12 @@ public class Converters {
 						method.invoke(rsp, (Boolean) value);
 					} else {
 						if (isCheckJsonType && value != null) {
-							throw new ApiException(itemName + " is not a Boolean");
+							throw new ApiException(itemName
+									+ " is not a Boolean");
 						}
 						if (value != null) {
-							method.invoke(rsp, Boolean.valueOf(value.toString()));
+							method.invoke(rsp,
+									Boolean.valueOf(value.toString()));
 						}
 					}
 				} else if (Double.class.isAssignableFrom(typeClass)) {
@@ -152,7 +161,8 @@ public class Converters {
 						method.invoke(rsp, (Double) value);
 					} else {
 						if (isCheckJsonType && value != null) {
-							throw new ApiException(itemName + " is not a Double");
+							throw new ApiException(itemName
+									+ " is not a Double");
 						}
 					}
 				} else if (Number.class.isAssignableFrom(typeClass)) {
@@ -161,12 +171,15 @@ public class Converters {
 						method.invoke(rsp, (Number) value);
 					} else {
 						if (isCheckJsonType && value != null) {
-							throw new ApiException(itemName + " is not a Number");
+							throw new ApiException(itemName
+									+ " is not a Number");
 						}
 					}
 				} else if (Date.class.isAssignableFrom(typeClass)) {
-					DateFormat format = new SimpleDateFormat(Constants.DATE_TIME_FORMAT);
-					format.setTimeZone(TimeZone.getTimeZone(Constants.DATE_TIMEZONE));
+					DateFormat format = new SimpleDateFormat(
+							Constants.DATE_TIME_FORMAT);
+					format.setTimeZone(TimeZone
+							.getTimeZone(Constants.DATE_TIMEZONE));
 					Object value = reader.getPrimitiveObject(itemName);
 					if (value instanceof String) {
 						method.invoke(rsp, format.parse(value.toString()));
@@ -175,11 +188,13 @@ public class Converters {
 					Type fieldType = field.getGenericType();
 					if (fieldType instanceof ParameterizedType) {
 						ParameterizedType paramType = (ParameterizedType) fieldType;
-						Type[] genericTypes = paramType.getActualTypeArguments();
+						Type[] genericTypes = paramType
+								.getActualTypeArguments();
 						if (genericTypes != null && genericTypes.length > 0) {
 							if (genericTypes[0] instanceof Class<?>) {
 								Class<?> subType = (Class<?>) genericTypes[0];
-								List<?> listObjs = reader.getListObjects(listName, itemName, subType);
+								List<?> listObjs = reader.getListObjects(
+										listName, itemName, subType);
 								if (listObjs != null) {
 									method.invoke(rsp, listObjs);
 								}

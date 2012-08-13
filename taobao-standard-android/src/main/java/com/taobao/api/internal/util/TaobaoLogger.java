@@ -12,22 +12,23 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
-import org.apache.log4j.Logger;
+import android.util.Log;
 
 import com.taobao.api.Constants;
 import com.taobao.api.TaobaoResponse;
 
 /**
- * 客户端日志
- * 通讯错误格式：time^_^api^_^app^_^ip^_^os^_^sdk^_^url^responseCode
+ * 客户端日志 通讯错误格式：time^_^api^_^app^_^ip^_^os^_^sdk^_^url^responseCode
  * 业务错误格式：time^_^response
  */
 public class TaobaoLogger {
 
-	private static final Logger clog = Logger.getLogger("sdk.comm.err");
-	private static final Logger blog = Logger.getLogger("sdk.biz.err");
-
-	private static String osName = System.getProperties().getProperty("os.name");
+	// private static final Logger clog = Logger.getLogger("sdk.comm.err");
+	// private static final Logger blog = Logger.getLogger("sdk.biz.err");
+	private static final String TAG_COMM = "sdk.comm.err";
+	private static final String TAG_BIZ = "sdk.biz.err";
+	private static String osName = System.getProperties()
+			.getProperty("os.name");
 	private static String ip = null;
 	private static boolean needEnableLogger = true;
 
@@ -53,7 +54,8 @@ public class TaobaoLogger {
 	/**
 	 * 通讯错误日志
 	 */
-	public static void logCommError(Exception e, HttpURLConnection conn, String appKey, String method, byte[] content) {
+	public static void logCommError(Exception e, HttpURLConnection conn,
+			String appKey, String method, byte[] content) {
 		String contentString = null;
 		try {
 			contentString = new String(content, "UTF-8");
@@ -66,7 +68,8 @@ public class TaobaoLogger {
 	/**
 	 * 通讯错误日志
 	 */
-	public static void logCommError(Exception e, String url, String appKey, String method, byte[] content) {
+	public static void logCommError(Exception e, String url, String appKey,
+			String method, byte[] content) {
 		String contentString = null;
 		try {
 			contentString = new String(content, "UTF-8");
@@ -79,18 +82,21 @@ public class TaobaoLogger {
 	/**
 	 * 通讯错误日志
 	 */
-	public static void logCommError(Exception e, HttpURLConnection conn, String appKey, String method, Map<String, String> params) {
+	public static void logCommError(Exception e, HttpURLConnection conn,
+			String appKey, String method, Map<String, String> params) {
 		_logCommError(e, conn, null, appKey, method, params);
 	}
 
-	public static void logCommError(Exception e, String url, String appKey, String method, Map<String, String> params) {
+	public static void logCommError(Exception e, String url, String appKey,
+			String method, Map<String, String> params) {
 		_logCommError(e, null, url, appKey, method, params);
 	}
 
 	/**
 	 * 通讯错误日志
 	 */
-	private static void logCommError(Exception e, HttpURLConnection conn, String appKey, String method, String content) {
+	private static void logCommError(Exception e, HttpURLConnection conn,
+			String appKey, String method, String content) {
 		Map<String, String> params = parseParam(content);
 		_logCommError(e, conn, null, appKey, method, params);
 	}
@@ -98,7 +104,8 @@ public class TaobaoLogger {
 	/**
 	 * 通讯错误日志
 	 */
-	private static void logCommError(Exception e, String url, String appKey, String method, String content) {
+	private static void logCommError(Exception e, String url, String appKey,
+			String method, String content) {
 		Map<String, String> params = parseParam(content);
 		_logCommError(e, null, url, appKey, method, params);
 	}
@@ -106,7 +113,8 @@ public class TaobaoLogger {
 	/**
 	 * 通讯错误日志
 	 */
-	private static void _logCommError(Exception e, HttpURLConnection conn, String url, String appKey, String method, Map<String, String> params) {
+	private static void _logCommError(Exception e, HttpURLConnection conn,
+			String url, String appKey, String method, Map<String, String> params) {
 		DateFormat df = new SimpleDateFormat(Constants.DATE_TIME_FORMAT);
 		df.setTimeZone(TimeZone.getTimeZone(Constants.DATE_TIMEZONE));
 		String sdkName = Constants.SDK_VERSION;
@@ -140,7 +148,8 @@ public class TaobaoLogger {
 		sb.append(rspCode);
 		sb.append("^_^");
 		sb.append((e.getMessage() + "").replaceAll("\r\n", " "));
-		clog.error(sb.toString());
+		Log.e(TAG_COMM, sb.toString());
+		// clog.error(sb.toString());
 	}
 
 	private static Map<String, String> parseParam(String contentString) {
@@ -173,13 +182,15 @@ public class TaobaoLogger {
 		sb.append(df.format(new Date()));
 		sb.append("^_^");
 		sb.append(rsp);
-		blog.error(sb.toString());
+		Log.e(TAG_BIZ, sb.toString());
+		// blog.error(sb.toString());
 	}
 
 	/**
 	 * 发生特别错误时记录完整错误现场
 	 */
-	public static void logErrorScene(Map<String, Object> rt, TaobaoResponse tRsp, String appSecret) {
+	public static void logErrorScene(Map<String, Object> rt,
+			TaobaoResponse tRsp, String appSecret) {
 		if (!needEnableLogger) {
 			return;
 		}
@@ -211,7 +222,8 @@ public class TaobaoLogger {
 		sb.append("^_^");
 		sb.append("Body:");
 		sb.append((String) rt.get("rsp"));
-		blog.error(sb.toString());
+		Log.e(TAG_BIZ, sb.toString());
+		// blog.error(sb.toString());
 	}
 
 	private static void appendLog(TaobaoHashMap map, StringBuilder sb) {
